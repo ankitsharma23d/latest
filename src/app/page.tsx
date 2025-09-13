@@ -3,11 +3,14 @@ import Image from 'next/image';
 import {
   ArrowRight,
   Blocks,
+  Briefcase,
   Contact,
   Cpu,
   Fingerprint,
   MessageSquareQuote,
   Network,
+  Rocket,
+  Wrench,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,6 +42,28 @@ const features = [
     link: '/protocols',
     linkText: 'View All Protocols',
   },
+];
+
+const services = [
+    {
+        icon: <Rocket className="h-8 w-8 text-primary" />,
+        title: 'One-Time Node Setup',
+        description: 'A single setup fee to get your blockchain node up and running.',
+        price: 'Starts at $50',
+    },
+    {
+        icon: <Wrench className="h-8 w-8 text-primary" />,
+        title: 'Maintenance as a Service',
+        description: 'Ongoing support and maintenance to ensure your node is always optimal.',
+        price: 'Starts at $50/month',
+    },
+    {
+        icon: <Briefcase className="h-8 w-8 text-primary" />,
+        title: 'Fully Managed Enterprise',
+        description: 'A complete, hands-off solution for large-scale enterprise needs.',
+        price: 'Custom Quote',
+        link: '/contact',
+    },
 ];
 
 export default function Home() {
@@ -110,7 +135,44 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="protocols" className="w-full py-12 md:py-24 lg:py-32 bg-card/50">
+      <section id="services" className="w-full py-12 md:py-24 lg:py-32 bg-card/50">
+        <div className="container px-4 md:px-6">
+          <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
+            <div className="inline-block rounded-lg bg-secondary px-3 py-1 text-sm">
+              Our Services
+            </div>
+            <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">
+              Flexible Plans for Every Scale
+            </h2>
+            <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+              From one-time setups to fully managed enterprise solutions, we have a plan that fits your needs.
+            </p>
+          </div>
+          <div className="mx-auto grid items-start gap-8 sm:max-w-4xl sm:grid-cols-1 md:grid-cols-2 lg:max-w-5xl lg:grid-cols-3">
+            {services.map((service) => (
+              <Card key={service.title} className="bg-card/90 hover:bg-card transition-colors flex flex-col">
+                <CardHeader className="flex flex-row items-center gap-4">
+                  {service.icon}
+                  <CardTitle className="font-headline">{service.title}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 flex-grow">
+                  <p className="text-muted-foreground">{service.description}</p>
+                  <p className="text-2xl font-bold">{service.price}</p>
+                </CardContent>
+                 {service.link && (
+                    <CardContent>
+                      <Button asChild className="w-full">
+                        <Link href={service.link}>Contact Sales</Link>
+                      </Button>
+                    </CardContent>
+                )}
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="protocols" className="w-full py-12 md:py-24 lg:py-32">
         <div className="container px-4 md:px-6">
           <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
              <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">
