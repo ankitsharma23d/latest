@@ -13,6 +13,12 @@ const contactSchema = z.object({
 const subscriptionSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
   email: z.string().email('Invalid email address.'),
+  protocol: z.string().min(1, 'Protocol is required.'),
+  otherProtocol: z.string().optional(),
+  networkType: z.string().min(1, 'Network Type is required.'),
+  otherNetworkType: z.string().optional(),
+  nodeType: z.string().min(1, 'Node Type is required.'),
+  otherNodeType: z.string().optional(),
   query: z.string().min(10, 'Query must be at least 10 characters.'),
 });
 
@@ -38,13 +44,11 @@ export async function submitContactForm(prevState: any, formData: FormData) {
 
 
 export async function submitSubscriptionQuery(prevState: any, formData: FormData) {
-  const validatedFields = subscriptionSchema.safeParse({
-    name: formData.get('name'),
-    email: formData.get('email'),
-    query: formData.get('query'),
-  });
+  const rawData = Object.fromEntries(formData.entries());
+  const validatedFields = subscriptionSchema.safeParse(rawData);
 
   if (!validatedFields.success) {
+    console.log(validatedFields.error.flatten().fieldErrors);
     return {
       errors: validatedFields.error.flatten().fieldErrors,
       message: 'Validation failed.',
