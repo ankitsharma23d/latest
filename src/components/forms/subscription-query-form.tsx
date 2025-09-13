@@ -122,9 +122,7 @@ export default function SubscriptionQueryForm() {
 
           <div className="space-y-2">
             <Label>Protocol</Label>
-            <select name="protocol" hidden {...register('protocol')}>
-                <option value={protocolValue} />
-            </select>
+            <input name="protocol" type="hidden" {...register('protocol')} />
             <Select
               onValueChange={(value) => {
                 setValue('protocol', value, { shouldValidate: true });
@@ -162,9 +160,7 @@ export default function SubscriptionQueryForm() {
 
           <div className="space-y-2">
             <Label>Network Type</Label>
-            <select name="networkType" hidden {...register('networkType')}>
-                <option value={networkTypeValue} />
-            </select>
+            <input name="networkType" type="hidden" {...register('networkType')} />
             <Select
               onValueChange={(value) => {
                 setValue('networkType', value, { shouldValidate: true });
@@ -201,9 +197,7 @@ export default function SubscriptionQueryForm() {
           
           <div className="space-y-2">
             <Label>Node Type</Label>
-            <select name="nodeType" hidden {...register('nodeType')}>
-                <option value={nodeTypeValue} />
-            </select>
+            <input name="nodeType" type="hidden" {...register('nodeType')} />
             <Select
               onValueChange={(value) => {
                 setValue('nodeType', value, { shouldValidate: true });
