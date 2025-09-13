@@ -4,7 +4,7 @@ import { useFormStatus } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useActionState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,8 @@ const subscriptionSchema = z.object({
   query: z.string().min(10, 'Query must be at least 10 characters.'),
 });
 
+type SubscriptionFormValues = z.infer<typeof subscriptionSchema>;
+
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
@@ -55,7 +57,7 @@ export default function SubscriptionQueryForm() {
     reset,
     setValue,
     watch,
-  } = useForm({
+  } = useForm<SubscriptionFormValues>({
     resolver: zodResolver(subscriptionSchema),
     defaultValues: {
       name: '',
@@ -92,12 +94,22 @@ export default function SubscriptionQueryForm() {
       });
     }
   }, [state, toast, reset, setValue]);
+  
+  const onSubmit = (data: SubscriptionFormValues) => {
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, value]) => {
+      if (value) {
+        formData.append(key, value);
+      }
+    });
+    formAction(formData);
+  };
 
   return (
     <Card>
       <CardContent className="p-6">
         <form
-          action={formAction}
+          onSubmit={handleSubmit(onSubmit)}
           className="space-y-4"
         >
           <div className="space-y-2">
@@ -122,7 +134,6 @@ export default function SubscriptionQueryForm() {
 
           <div className="space-y-2">
             <Label>Protocol</Label>
-            <input name="protocol" type="hidden" {...register('protocol')} />
             <Select
               onValueChange={(value) => {
                 setValue('protocol', value, { shouldValidate: true });
@@ -141,6 +152,7 @@ export default function SubscriptionQueryForm() {
                 <SelectItem value="Other">Other</SelectItem>
               </SelectContent>
             </Select>
+            <input type="hidden" {...register('protocol')} />
             {errors.protocol && (
               <p className="text-sm text-destructive">
                 {errors.protocol.message}
@@ -160,7 +172,6 @@ export default function SubscriptionQueryForm() {
 
           <div className="space-y-2">
             <Label>Network Type</Label>
-            <input name="networkType" type="hidden" {...register('networkType')} />
             <Select
               onValueChange={(value) => {
                 setValue('networkType', value, { shouldValidate: true });
@@ -176,6 +187,7 @@ export default function SubscriptionQueryForm() {
                 <SelectItem value="Other">Other</SelectItem>
               </SelectContent>
             </Select>
+            <input type="hidden" {...register('networkType')} />
             {errors.networkType && (
               <p className="text-sm text-destructive">
                 {errors.networkType.message}
@@ -197,7 +209,6 @@ export default function SubscriptionQueryForm() {
           
           <div className="space-y-2">
             <Label>Node Type</Label>
-            <input name="nodeType" type="hidden" {...register('nodeType')} />
             <Select
               onValueChange={(value) => {
                 setValue('nodeType', value, { shouldValidate: true });
@@ -215,6 +226,7 @@ export default function SubscriptionQueryForm() {
                 <SelectItem value="Other">Other</SelectItem>
               </SelectContent>
             </Select>
+            <input type="hidden" {...register('nodeType')} />
             {errors.nodeType && (
               <p className="text-sm text-destructive">
                 {errors.nodeType.message}
