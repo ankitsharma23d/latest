@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import type { SupportRequest, Status } from '@/lib/types';
 import { STATUSES } from '@/lib/types';
+import { db } from '@/lib/firebase';
+import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
 import {
   Table,
   TableBody,
@@ -16,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Cpu, MoreVertical } from 'lucide-react';
 import RequestSummaryModal from './request-summary-modal';
 import RequestDetailsModal from './request-details-modal';
+import LiveChatModal from './live-chat-modal';
 import { format } from 'date-fns';
 import {
   DropdownMenu,
@@ -26,35 +29,47 @@ import {
 import { updateRequestStatus } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getSupportRequests } from '@/lib/data';
 
 export default function DashboardClient() {
   const [requests, setRequests] = useState<SupportRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isLiveChatModalOpen, setIsLiveChatModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<SupportRequest | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    async function fetchRequests() {
-      try {
-        const requestsData = await getSupportRequests();
-        requestsData.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-        setRequests(requestsData);
-      } catch (error) {
-        console.error("Error fetching requests:", error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch support requests.",
-          variant: "destructive",
+    setIsLoading(true);
+    const q = query(collection(db, 'requests'), orderBy('timestamp', 'desc'));
+
+    const unsubscribe = onSnapshot(q, 
+      (querySnapshot) => {
+        const requestsData = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            // Firestore Timestamps need to be converted to a serializable format.
+            const timestamp = data.timestamp?.toDate ? data.timestamp.toDate().toISOString() : new Date().toISOString();
+            return {
+                ...data,
+                id: doc.id,
+                timestamp,
+            } as SupportRequest;
         });
-      } finally {
+        setRequests(requestsData);
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error("Error fetching requests in real-time:", error);
+        toast({
+            title: "Error",
+            description: "Failed to fetch support requests in real-time.",
+            variant: "destructive",
+        });
         setIsLoading(false);
       }
-    }
+    );
 
-    fetchRequests();
+    return () => unsubscribe();
   }, [toast]);
 
   const handleSummarizeClick = (request: SupportRequest) => {
@@ -63,8 +78,13 @@ export default function DashboardClient() {
   };
 
   const handleRowClick = (request: SupportRequest) => {
-    setSelectedRequest(request);
-    setIsDetailsModalOpen(true);
+    if (request.type === 'Live Chat') {
+      setSelectedRequest(request);
+      setIsLiveChatModalOpen(true);
+    } else {
+      setSelectedRequest(request);
+      setIsDetailsModalOpen(true);
+    }
   };
 
   const handleNotesUpdate = (requestId: string, notes: string) => {
@@ -139,7 +159,7 @@ export default function DashboardClient() {
                   <div className="text-sm text-muted-foreground">{request.email}</div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={request.type === 'Subscription' ? 'default' : 'secondary'}>
+                  <Badge variant={request.type === 'Subscription' || request.type === 'Live Chat' ? 'default' : 'secondary'}>
                     {request.type}
                   </Badge>
                 </TableCell>
@@ -211,6 +231,11 @@ export default function DashboardClient() {
         onOpenChange={setIsDetailsModalOpen}
         request={selectedRequest}
         onNotesUpdate={handleNotesUpdate}
+      />
+      <LiveChatModal 
+        isOpen={isLiveChatModalOpen}
+        onOpenChange={setIsLiveChatModalOpen}
+        request={selectedRequest}
       />
     </>
   );

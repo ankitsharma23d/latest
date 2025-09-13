@@ -5,7 +5,7 @@ import nodemailer from 'nodemailer';
 import { identifyBlockchainProtocol } from '@/ai/flows/identify-blockchain-protocol';
 import { summarizeSupportRequest } from '@/ai/flows/summarize-support-requests';
 import { db } from '@/lib/firebase';
-import { collection, serverTimestamp, doc, updateDoc, setDoc } from 'firebase/firestore';
+import { collection, serverTimestamp, doc, updateDoc, setDoc, addDoc } from 'firebase/firestore';
 import { format } from 'date-fns';
 
 const contactSchema = z.object({
@@ -25,6 +25,12 @@ const subscriptionSchema = z.object({
   otherNodeType: z.string().optional(),
   query: z.string().min(10, 'Query must be at least 10 characters.'),
 });
+
+const chatMessageSchema = z.object({
+    chatId: z.string(),
+    sender: z.enum(['user', 'agent']),
+    text: z.string().min(1, 'Message cannot be empty.'),
+  });
 
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_SERVER_HOST,
@@ -138,6 +144,68 @@ export async function submitSubscriptionQuery(data: z.infer<typeof subscriptionS
     } catch (error) {
         console.error('Error submitting subscription query:', error);
         return { message: 'An error occurred while submitting the form.', errors: { _form: ['Server error'] } };
+    }
+}
+
+export async function startChatSession(data: { name: string; email: string }) {
+    const { name, email } = data;
+    if (!name || !email) {
+        return { error: 'Name and email are required.' };
+    }
+
+    const sanitizedName = name.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '');
+    const dateString = format(new Date(), 'yyyy-MM-dd-HH-mm-ss-SSS');
+    const chatId = `${sanitizedName}-live-${dateString}`;
+
+    const chatSessionData = {
+        id: chatId,
+        name,
+        email,
+        type: 'Live Chat',
+        status: 'Open', 
+        timestamp: serverTimestamp(),
+        message: 'Live chat session initiated.', 
+    };
+
+    try {
+        await setDoc(doc(db, 'requests', chatId), chatSessionData);
+        return { success: true, chatId };
+    } catch (error) {
+        console.error('Error starting chat session:', error);
+        return { error: 'Could not start a new chat session.' };
+    }
+}
+
+export async function sendChatMessage(data: z.infer<typeof chatMessageSchema>) {
+    const validatedFields = chatMessageSchema.safeParse(data);
+
+    if (!validatedFields.success) {
+        return {
+            errors: validatedFields.error.flatten().fieldErrors,
+            message: 'Validation failed.',
+        };
+    }
+
+    const { chatId, sender, text } = validatedFields.data;
+
+    const messageData = {
+        sender,
+        text,
+        timestamp: serverTimestamp(), // Use server-side timestamp
+    };
+
+    try {
+        const messagesColRef = collection(db, 'requests', chatId, 'messages');
+        await addDoc(messagesColRef, messageData);
+        // Also update the main request document with the latest message and timestamp
+        await updateDoc(doc(db, 'requests', chatId), {
+            message: text,
+            timestamp: serverTimestamp(), 
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Error sending chat message:', error);
+        return { message: 'Failed to send message.', errors: { _form: ['Server error'] } };
     }
 }
 

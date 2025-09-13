@@ -1,6 +1,3 @@
-import { collection, getDocs } from 'firebase/firestore';
-import type { SupportRequest } from '@/lib/types';
-import { db } from '@/lib/firebase';
 import {
     Hexagon,
     Boxes,
@@ -56,30 +53,3 @@ export const PROTOCOLS = [
   { name: 'RPC', icon: Cpu },
   { name: 'Skale', icon: Network },
 ];
-
-export async function getSupportRequests(): Promise<SupportRequest[]> {
-    const requestsCol = collection(db, 'requests');
-    const requestSnapshot = await getDocs(requestsCol);
-    const requestsList = requestSnapshot.docs.map(doc => {
-        const data = doc.data();
-        const timestamp = data.timestamp && typeof data.timestamp.toDate === 'function' 
-            ? data.timestamp.toDate().toLocaleDateString() 
-            : 'N/A';
-        return {
-            id: doc.id,
-            name: data.name,
-            email: data.email,
-            type: data.type,
-            message: data.message,
-            timestamp: timestamp,
-            status: data.status,
-            protocol: data.protocol,
-            otherProtocol: data.otherProtocol,
-            networkType: data.networkType,
-            otherNetworkType: data.otherNetworkType,
-            nodeType: data.nodeType,
-            otherNodeType: data.otherNodeType,
-        } as SupportRequest;
-    });
-    return requestsList;
-}
