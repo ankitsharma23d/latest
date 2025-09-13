@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, FormEvent } from 'react';
-import { MessageSquare, Send, X } from 'lucide-react';
+import { MessageSquare, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -12,14 +12,20 @@ import {
 } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { startChatSession, sendChatMessage } from '@/lib/actions';
+import { collection, query, onSnapshot, orderBy, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 type Message = {
   sender: 'user' | 'agent';
   text: string;
+  timestamp: Timestamp;
 };
+
+type ConnectionStatus = 'connecting' | 'connected' | 'error';
 
 const LiveChat = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -28,64 +34,83 @@ const LiveChat = () => {
   const [userEmail, setUserEmail] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
+  const [chatId, setChatId] = useState<string | null>(null);
+  const [isSending, setIsSending] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (step === 'chat' && messages.length === 0) {
-      setTimeout(() => {
-        setMessages([
-          { sender: 'agent', text: `Hi ${userName}! How can I help you today?` },
-        ]);
-      }, 500);
-    }
-  }, [step, userName, messages.length]);
+    if (!chatId) return;
+
+    setConnectionStatus('connecting');
+    const q = query(collection(db, 'requests', chatId, 'messages'), orderBy('timestamp'));
+
+    const unsubscribe = onSnapshot(q, 
+      (querySnapshot) => {
+        const newMessages = querySnapshot.docs.map(doc => doc.data() as Message);
+        setMessages(newMessages);
+        setConnectionStatus('connected');
+      },
+      (err) => {
+        console.error("LiveChat: Error in snapshot listener:", err);
+        setConnectionStatus('error');
+      }
+    );
+
+    return () => unsubscribe();
+  }, [chatId]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
-        // A bit of a hack to scroll to bottom. In a real app use a more robust solution.
-        setTimeout(() => {
-            const viewport = scrollAreaRef.current?.querySelector('div[data-radix-scroll-area-viewport]');
-            if (viewport) {
-                viewport.scrollTop = viewport.scrollHeight;
-            }
-        }, 100);
+      const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
+      if (viewport) {
+        viewport.scrollTop = viewport.scrollHeight;
+      }
     }
   }, [messages]);
 
-  const handleStartChat = (e: FormEvent) => {
+  const handleStartChat = async (e: FormEvent) => {
     e.preventDefault();
     if (userName && userEmail) {
-      console.log('Starting chat for:', { userName, userEmail });
-      setStep('chat');
+      const result = await startChatSession({ name: userName, email: userEmail });
+      if (result.success && result.chatId) {
+        setChatId(result.chatId);
+        setStep('chat');
+        // @ts-ignore
+        setMessages([ { sender: 'agent', text: `Hi ${userName}! How can I help you today?`, timestamp: Timestamp.now() } ]);
+      } else {
+        console.error('Failed to start chat session', result.error);
+      }
     }
   };
 
-  const handleSendMessage = (e: FormEvent) => {
+  const handleSendMessage = async (e: FormEvent) => {
     e.preventDefault();
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || !chatId || isSending) return;
 
-    const userMessage: Message = { sender: 'user', text: inputValue };
-    setMessages((prev) => [...prev, userMessage]);
+    setIsSending(true);
+    const text = inputValue;
     setInputValue('');
 
-    setTimeout(() => {
-      const agentResponse: Message = {
-        sender: 'agent',
-        text: "Thanks for your message. I'm connecting you to a specialist. Please wait a moment.",
-      };
-      setMessages((prev) => [...prev, agentResponse]);
-    }, 1500);
+    const result = await sendChatMessage({ chatId, sender: 'user', text });
+
+    if (!result.success) {
+      console.error('Failed to send message', result.message);
+      setInputValue(text); // Re-populate the input on failure
+    }
+    setIsSending(false);
   };
 
   const resetChat = () => {
     setIsOpen(false);
     setTimeout(() => {
-        setStep('details');
-        setMessages([]);
-        setUserName('');
-        setUserEmail('');
+      setStep('details');
+      setMessages([]);
+      setUserName('');
+      setUserEmail('');
+      setChatId(null);
     }, 300);
-  }
+  };
 
   return (
     <>
@@ -96,7 +121,7 @@ const LiveChat = () => {
       >
         <MessageSquare className="h-6 w-6" />
       </Button>
-      <Sheet open={isOpen} onOpenChange={(open) => !open ? resetChat() : setIsOpen(true)}>
+      <Sheet open={isOpen} onOpenChange={(open) => !open && resetChat()}>
         <SheetContent className="flex flex-col">
           <SheetHeader>
             <SheetTitle>Live Support</SheetTitle>
@@ -136,49 +161,56 @@ const LiveChat = () => {
 
           {step === 'chat' && (
             <div className="flex-1 flex flex-col h-full overflow-hidden">
-                <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
-                    <div className="space-y-4">
-                        {messages.map((msg, index) => (
-                        <div
-                            key={index}
-                            className={cn(
-                            'flex items-end gap-2',
-                            msg.sender === 'user' ? 'justify-end' : 'justify-start'
-                            )}
-                        >
-                            {msg.sender === 'agent' && (
-                            <Avatar className="h-8 w-8">
-                                <AvatarFallback>S</AvatarFallback>
-                            </Avatar>
-                            )}
-                            <div
-                            className={cn(
-                                'max-w-xs rounded-lg px-4 py-2 text-sm',
-                                msg.sender === 'user'
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-secondary'
-                            )}
-                            >
-                            {msg.text}
-                            </div>
-                        </div>
-                        ))}
+                {connectionStatus === 'connecting' && <div className="p-2 text-center text-xs text-muted-foreground">Connecting...</div>}
+                {connectionStatus === 'error' && 
+                    <div className="p-2 text-center text-xs text-destructive bg-destructive/10">
+                        Connection error. Please check your network and firewall settings.
                     </div>
-                </ScrollArea>
-                <form
-                    onSubmit={handleSendMessage}
-                    className="flex items-center gap-2 border-t p-4"
-                >
-                    <Input
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    placeholder="Type your message..."
-                    autoComplete="off"
-                    />
-                    <Button type="submit" size="icon" aria-label="Send message">
-                    <Send className="h-4 w-4" />
-                    </Button>
-                </form>
+                }
+              <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
+                <div className="space-y-4">
+                  {messages.map((msg, index) => (
+                    <div
+                      key={index}
+                      className={cn(
+                        'flex items-end gap-2',
+                        msg.sender === 'user' ? 'justify-end' : 'justify-start'
+                      )}
+                    >
+                      {msg.sender === 'agent' && (
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback>S</AvatarFallback>
+                        </Avatar>
+                      )}
+                      <div
+                        className={cn(
+                          'max-w-xs rounded-lg px-4 py-2 text-sm',
+                          msg.sender === 'user'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-secondary'
+                        )}
+                      >
+                        {msg.text}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+              <form
+                onSubmit={handleSendMessage}
+                className="flex items-center gap-2 border-t p-4"
+              >
+                <Input
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  placeholder="Type your message..."
+                  autoComplete="off"
+                  disabled={isSending || connectionStatus !== 'connected'}
+                />
+                <Button type="submit" size="icon" aria-label="Send message" disabled={isSending || connectionStatus !== 'connected'}>
+                  <Send className="h-4 w-4" />
+                </Button>
+              </form>
             </div>
           )}
         </SheetContent>
