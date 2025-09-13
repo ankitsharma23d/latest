@@ -24,6 +24,7 @@ const subscriptionSchema = z.object({
   query: z.string().min(10, 'Query must be at least 10 characters.'),
 });
 
+
 async function sendEmailNotification(data: any, type: 'Contact' | 'Subscription') {
     try {
         const mailCollection = collection(db, 'mail');
