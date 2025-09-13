@@ -26,66 +26,64 @@ const subscriptionSchema = z.object({
 
 
 export async function submitContactForm(data: z.infer<typeof contactSchema>) {
-  const validatedFields = contactSchema.safeParse(data);
+    const validatedFields = contactSchema.safeParse(data);
 
-  if (!validatedFields.success) {
-    return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Validation failed.',
-    };
-  }
+    if (!validatedFields.success) {
+        return {
+        errors: validatedFields.error.flatten().fieldErrors,
+        message: 'Validation failed.',
+        };
+    }
 
-  try {
-    const requestsCollection = collection(db, 'requests');
-    await addDoc(requestsCollection, {
-      ...validatedFields.data,
-      type: 'Contact',
-      status: 'Requested',
-      timestamp: serverTimestamp(),
-    });
-    
-    return { message: 'Your message has been sent successfully!', errors: null };
-  } catch (error) {
-    console.error('Error submitting contact form:', error);
-    return { message: 'An error occurred while submitting the form.', errors: {} };
-  }
+    try {
+        await addDoc(collection(db, 'requests'), {
+            name: validatedFields.data.name,
+            email: validatedFields.data.email,
+            message: validatedFields.data.message,
+            type: 'Contact',
+            status: 'Requested',
+            timestamp: serverTimestamp(),
+        });
+        
+        return { message: 'Your message has been sent successfully!', errors: null };
+    } catch (error) {
+        console.error('Error submitting contact form:', error);
+        return { message: 'An error occurred while submitting the form.', errors: {} };
+    }
 }
 
 
 export async function submitSubscriptionQuery(data: z.infer<typeof subscriptionSchema>) {
-  const validatedFields = subscriptionSchema.safeParse(data);
+    const validatedFields = subscriptionSchema.safeParse(data);
 
-  if (!validatedFields.success) {
-    return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Validation failed.',
-    };
-  }
-  
-  try {
-    const requestsCollection = collection(db, 'requests');
-    const { query, ...rest } = validatedFields.data;
+    if (!validatedFields.success) {
+        return {
+        errors: validatedFields.error.flatten().fieldErrors,
+        message: 'Validation failed.',
+        };
+    }
+    
+    try {
+        await addDoc(collection(db, 'requests'), {
+            name: validatedFields.data.name,
+            email: validatedFields.data.email,
+            message: validatedFields.data.query,
+            protocol: validatedFields.data.protocol,
+            otherProtocol: validatedFields.data.otherProtocol || '',
+            networkType: validatedFields.data.networkType,
+            otherNetworkType: validatedFields.data.otherNetworkType || '',
+            nodeType: validatedFields.data.nodeType,
+            otherNodeType: validatedFields.data.otherNodeType || '',
+            type: 'Subscription',
+            status: 'Requested',
+            timestamp: serverTimestamp(),
+        });
 
-    await addDoc(requestsCollection, {
-      name: rest.name,
-      email: rest.email,
-      protocol: rest.protocol,
-      otherProtocol: rest.otherProtocol,
-      networkType: rest.networkType,
-      otherNetworkType: rest.otherNetworkType,
-      nodeType: rest.nodeType,
-      otherNodeType: rest.otherNodeType,
-      message: query,
-      type: 'Subscription',
-      status: 'Requested',
-      timestamp: serverTimestamp(),
-    });
-
-    return { message: 'Your query has been sent successfully!', errors: null };
-  } catch (error) {
-    console.error('Error submitting subscription query:', error);
-    return { message: 'An error occurred while submitting the form.', errors: {} };
-  }
+        return { message: 'Your query has been sent successfully!', errors: null };
+    } catch (error) {
+        console.error('Error submitting subscription query:', error);
+        return { message: 'An error occurred while submitting the form.', errors: {} };
+    }
 }
 
 
