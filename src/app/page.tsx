@@ -72,7 +72,7 @@ export default function Home() {
       <section className="relative w-full py-20 md:py-32 lg:py-40 bg-card/50">
         <div className="container mx-auto px-4 md:px-6 text-center space-y-6">
           <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter font-headline">
-            InfraSage
+            BlockBuddy
           </h1>
           <p className="max-w-[700px] mx-auto text-lg md:text-xl text-muted-foreground">
             AI-powered insights and tools to navigate the complex world of blockchain infrastructure.

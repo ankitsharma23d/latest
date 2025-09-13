@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Cpu, MoreVertical } from 'lucide-react';
 import RequestSummaryModal from './request-summary-modal';
 import RequestDetailsModal from './request-details-modal';
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -65,6 +65,14 @@ export default function DashboardClient() {
   const handleRowClick = (request: SupportRequest) => {
     setSelectedRequest(request);
     setIsDetailsModalOpen(true);
+  };
+
+  const handleNotesUpdate = (requestId: string, notes: string) => {
+    setRequests((prevRequests) =>
+      prevRequests.map((req) =>
+        req.id === requestId ? { ...req, notes } : req
+      )
+    );
   };
 
   const handleStatusChange = async (requestId: string, newStatus: Status) => {
@@ -160,7 +168,7 @@ export default function DashboardClient() {
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {request.timestamp
-                    ? formatDistanceToNow(new Date(request.timestamp), { addSuffix: true })
+                    ? format(new Date(request.timestamp), 'yyyy-MM-dd HH:mm:ss')
                     : 'N/A'}
                 </TableCell>
                 <TableCell className="max-w-xs truncate">{request.message}</TableCell>
@@ -202,6 +210,7 @@ export default function DashboardClient() {
         isOpen={isDetailsModalOpen}
         onOpenChange={setIsDetailsModalOpen}
         request={selectedRequest}
+        onNotesUpdate={handleNotesUpdate}
       />
     </>
   );

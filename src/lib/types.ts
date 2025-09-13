@@ -28,4 +28,5 @@ export type SupportRequest = {
   otherNetworkType?: string;
   nodeType?: string;
   otherNodeType?: string;
+  notes?: string;
 };

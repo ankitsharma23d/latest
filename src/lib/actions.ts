@@ -5,7 +5,8 @@ import nodemailer from 'nodemailer';
 import { identifyBlockchainProtocol } from '@/ai/flows/identify-blockchain-protocol';
 import { summarizeSupportRequest } from '@/ai/flows/summarize-support-requests';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
+import { collection, serverTimestamp, doc, updateDoc, setDoc } from 'firebase/firestore';
+import { format } from 'date-fns';
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -46,7 +47,12 @@ export async function submitContactForm(data: z.infer<typeof contactSchema>) {
     }
 
     const { name, email, message } = validatedFields.data;
+    const sanitizedName = name.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '');
+    const dateString = format(new Date(), 'yyyy-MM-dd-HH-mm-ss-SSS');
+    const docId = `${sanitizedName}-${dateString}`;
+
     const docData = {
+        id: docId,
         name,
         email,
         message,
@@ -56,7 +62,7 @@ export async function submitContactForm(data: z.infer<typeof contactSchema>) {
     };
 
     try {
-        await addDoc(collection(db, 'requests'), docData);
+        await setDoc(doc(db, 'requests', docId), docData);
         
         const mailOptions = {
             from: `"BlockBuddy" <${process.env.EMAIL_USERNAME}>`,
@@ -86,7 +92,12 @@ export async function submitSubscriptionQuery(data: z.infer<typeof subscriptionS
     }
     
     const { name, email, query, protocol, otherProtocol, networkType, otherNetworkType, nodeType, otherNodeType } = validatedFields.data;
+    const sanitizedName = name.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '');
+    const dateString = format(new Date(), 'yyyy-MM-dd-HH-mm-ss-SSS');
+    const docId = `${sanitizedName}-${dateString}`;
+
     const docData = {
+        id: docId,
         name,
         email,
         message: query,
@@ -102,7 +113,7 @@ export async function submitSubscriptionQuery(data: z.infer<typeof subscriptionS
     };
     
     try {
-        await addDoc(collection(db, 'requests'), docData);
+        await setDoc(doc(db, 'requests', docId), docData);
 
         const mailOptions = {
             from: `"BlockBuddy" <${process.env.EMAIL_USERNAME}>`,
@@ -166,5 +177,16 @@ export async function updateRequestStatus(requestId: string, status: string) {
     } catch (error) {
         console.error('Error updating status:', error);
         return { success: false, error: 'Failed to update status.' };
+    }
+}
+
+export async function updateRequestNotes(requestId: string, notes: string) {
+    try {
+        const requestRef = doc(db, 'requests', requestId);
+        await updateDoc(requestRef, { notes });
+        return { success: true };
+    } catch (error) {
+        console.error('Error updating notes:', error);
+        return { success: false, error: 'Failed to update notes.' };
     }
 }
