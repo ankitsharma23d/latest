@@ -22,4 +22,10 @@ export type SupportRequest = {
   message: string;
   timestamp: string;
   status: Status;
+  protocol?: string;
+  otherProtocol?: string;
+  networkType?: string;
+  otherNetworkType?: string;
+  nodeType?: string;
+  otherNodeType?: string;
 };

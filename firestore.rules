@@ -7,10 +7,10 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Allow anyone to create requests, but only authenticated users to read, update, or delete them.
+    // Allow unauthenticated writes, but only authenticated reads
     match /requests/{requestId} {
-      allow create: if true;
-      allow read, update, delete: if request.auth != null;
+      allow write;
+      allow read: if request.auth != null;
     }
   }
 }

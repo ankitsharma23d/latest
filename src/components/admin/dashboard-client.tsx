@@ -23,12 +23,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, Timestamp } from 'firebase/firestore';
 import { updateRequestStatus } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-
+import { getSupportRequests } from '@/lib/data';
 
 export default function DashboardClient() {
   const [requests, setRequests] = useState<SupportRequest[]>([]);
@@ -39,45 +37,27 @@ export default function DashboardClient() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const q = query(collection(db, 'requests'));
-
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const requestsData: SupportRequest[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        requestsData.push({
-          id: doc.id,
-          name: data.name,
-          email: data.email,
-          type: data.type,
-          message: data.message,
-          // Convert Firestore Timestamp to JS Date string, fallback to now
-          timestamp: (data.timestamp as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
-          status: data.status,
-        });
-      });
-      
-      // Sort requests by timestamp client-side
-      requestsData.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
-      setRequests(requestsData);
-      setIsLoading(false);
-    }, (error) => {
+    async function fetchRequests() {
+      try {
+        const requestsData = await getSupportRequests();
+        requestsData.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        setRequests(requestsData);
+      } catch (error) {
         console.error("Error fetching requests:", error);
         toast({
-            title: "Error",
-            description: "Failed to fetch support requests.",
-            variant: "destructive"
+          title: "Error",
+          description: "Failed to fetch support requests.",
+          variant: "destructive",
         });
+      } finally {
         setIsLoading(false);
-    });
+      }
+    }
 
-    return () => unsubscribe();
+    fetchRequests();
   }, [toast]);
 
-
-  const handleSummarizeClick = (e: React.MouseEvent, request: SupportRequest) => {
-    e.stopPropagation();
+  const handleSummarizeClick = (request: SupportRequest) => {
     setSelectedRequest(request);
     setIsSummaryModalOpen(true);
   };
@@ -89,7 +69,6 @@ export default function DashboardClient() {
 
   const handleStatusChange = async (requestId: string, newStatus: Status) => {
     const originalRequests = [...requests];
-    // Optimistically update the UI
     setRequests((prevRequests) =>
       prevRequests.map((req) =>
         req.id === requestId ? { ...req, status: newStatus } : req
@@ -99,7 +78,6 @@ export default function DashboardClient() {
     const result = await updateRequestStatus(requestId, newStatus);
 
     if (!result.success) {
-      // Revert the change if the update fails
       setRequests(originalRequests);
       toast({
         title: 'Update Failed',
@@ -107,25 +85,25 @@ export default function DashboardClient() {
         variant: 'destructive',
       });
     } else {
-         toast({
-            title: 'Status Updated',
-            description: `Request status changed to "${newStatus}".`,
-        });
+      toast({
+        title: 'Status Updated',
+        description: `Request status changed to "${newStatus}".`,
+      });
     }
   };
-  
-    if (isLoading) {
-        return (
-            <div className="border rounded-lg p-4">
-                 <div className="space-y-3">
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
-                </div>
-            </div>
-        )
-    }
+
+  if (isLoading) {
+    return (
+      <div className="border rounded-lg p-4">
+        <div className="space-y-3">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -158,9 +136,13 @@ export default function DashboardClient() {
                   </Badge>
                 </TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
-                   <DropdownMenu>
+                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="w-full justify-start text-left font-normal min-w-[150px]">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full justify-start text-left font-normal min-w-[150px]"
+                      >
                         {request.status}
                       </Button>
                     </DropdownMenuTrigger>
@@ -177,11 +159,13 @@ export default function DashboardClient() {
                   </DropdownMenu>
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
-                  {request.timestamp ? formatDistanceToNow(new Date(request.timestamp), { addSuffix: true }) : 'N/A'}
+                  {request.timestamp
+                    ? formatDistanceToNow(new Date(request.timestamp), { addSuffix: true })
+                    : 'N/A'}
                 </TableCell>
                 <TableCell className="max-w-xs truncate">{request.message}</TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                   <DropdownMenu>
+                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon">
                         <MoreVertical className="h-4 w-4" />
@@ -192,8 +176,8 @@ export default function DashboardClient() {
                       <DropdownMenuItem onSelect={() => handleRowClick(request)}>
                         View Details
                       </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={(e) => handleSummarizeClick(e, request)}>
-                         <Cpu className="mr-2 h-4 w-4" />
+                      <DropdownMenuItem onSelect={() => handleSummarizeClick(request)}>
+                        <Cpu className="mr-2 h-4 w-4" />
                         Summarize
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -203,10 +187,10 @@ export default function DashboardClient() {
             ))}
           </TableBody>
         </Table>
-         {requests.length === 0 && !isLoading && (
-            <div className="text-center p-8 text-muted-foreground">
-                No support requests yet.
-            </div>
+        {requests.length === 0 && !isLoading && (
+          <div className="text-center p-8 text-muted-foreground">
+            No support requests yet.
+          </div>
         )}
       </div>
       <RequestSummaryModal

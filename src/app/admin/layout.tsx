@@ -6,11 +6,14 @@ import Logo from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { auth } from '@/lib/firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 function AdminHeader() {
   const router = useRouter();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await signOut(auth);
     localStorage.removeItem('isLoggedIn');
     router.push('/admin/login');
   };
@@ -38,13 +41,18 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    if (!loggedIn) {
-      router.replace('/admin/login');
-    } else {
-      setIsAuthenticated(true);
-    }
-    setIsLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsAuthenticated(true);
+        localStorage.setItem('isLoggedIn', 'true');
+      } else {
+        router.replace('/admin/login');
+        localStorage.removeItem('isLoggedIn');
+      }
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [router]);
 
   if (isLoading) {

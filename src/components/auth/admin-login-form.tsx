@@ -10,6 +10,8 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
+import { auth } from '@/lib/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address.'),
@@ -32,27 +34,25 @@ export default function AdminLoginForm() {
     defaultValues: { email: '', password: '' },
   });
 
-  const onSubmit = (data: LoginFormValues) => {
+  const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
-
-    // Mock authentication logic
-    setTimeout(() => {
-      if (data.email === 'admin@infrasage.com' && data.password === 'password') {
-        localStorage.setItem('isLoggedIn', 'true');
-        toast({
-          title: 'Login Successful',
-          description: 'Redirecting to dashboard...',
-        });
-        router.push('/admin/dashboard');
-      } else {
-        toast({
-          title: 'Login Failed',
-          description: 'Invalid email or password.',
-          variant: 'destructive',
-        });
-        setIsLoading(false);
-      }
-    }, 1000);
+    try {
+      await signInWithEmailAndPassword(auth, data.email, data.password);
+      localStorage.setItem('isLoggedIn', 'true');
+      toast({
+        title: 'Login Successful',
+        description: 'Redirecting to dashboard...',
+      });
+      router.push('/admin/dashboard');
+    } catch (error) {
+      toast({
+        title: 'Login Failed',
+        description: 'Invalid email or password.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
