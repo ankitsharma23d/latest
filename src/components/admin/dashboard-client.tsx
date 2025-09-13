@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Cpu } from 'lucide-react';
 import RequestSummaryModal from './request-summary-modal';
+import RequestDetailsModal from './request-details-modal';
 import { formatDistanceToNow } from 'date-fns';
 
 type DashboardClientProps = {
@@ -21,12 +22,19 @@ type DashboardClientProps = {
 };
 
 export default function DashboardClient({ requests }: DashboardClientProps) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<SupportRequest | null>(null);
 
-  const handleSummarizeClick = (request: SupportRequest) => {
+  const handleSummarizeClick = (e: React.MouseEvent, request: SupportRequest) => {
+    e.stopPropagation();
     setSelectedRequest(request);
-    setIsModalOpen(true);
+    setIsSummaryModalOpen(true);
+  };
+
+  const handleRowClick = (request: SupportRequest) => {
+    setSelectedRequest(request);
+    setIsDetailsModalOpen(true);
   };
 
   return (
@@ -44,7 +52,11 @@ export default function DashboardClient({ requests }: DashboardClientProps) {
           </TableHeader>
           <TableBody>
             {requests.map((request) => (
-              <TableRow key={request.id}>
+              <TableRow
+                key={request.id}
+                onClick={() => handleRowClick(request)}
+                className="cursor-pointer"
+              >
                 <TableCell>
                   <div className="font-medium">{request.name}</div>
                   <div className="text-sm text-muted-foreground">{request.email}</div>
@@ -62,7 +74,7 @@ export default function DashboardClient({ requests }: DashboardClientProps) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleSummarizeClick(request)}
+                    onClick={(e) => handleSummarizeClick(e, request)}
                   >
                     <Cpu className="mr-2 h-4 w-4" />
                     Summarize
@@ -74,8 +86,13 @@ export default function DashboardClient({ requests }: DashboardClientProps) {
         </Table>
       </div>
       <RequestSummaryModal
-        isOpen={isModalOpen}
-        onOpenChange={setIsModalOpen}
+        isOpen={isSummaryModalOpen}
+        onOpenChange={setIsSummaryModalOpen}
+        request={selectedRequest}
+      />
+      <RequestDetailsModal
+        isOpen={isDetailsModalOpen}
+        onOpenChange={setIsDetailsModalOpen}
         request={selectedRequest}
       />
     </>
