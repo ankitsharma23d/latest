@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { identifyBlockchainProtocol } from '@/ai/flows/identify-blockchain-protocol';
 import { summarizeSupportRequest } from '@/ai/flows/summarize-support-requests';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -52,7 +52,7 @@ async function sendEmailNotification(data: any, type: 'Contact' | 'Subscription'
     }
 }
 
-export async function submitContactForm(prevState: any, data: z.infer<typeof contactSchema>) {
+export async function submitContactForm(data: z.infer<typeof contactSchema>) {
   const validatedFields = contactSchema.safeParse(data);
 
   if (!validatedFields.success) {
@@ -73,7 +73,7 @@ export async function submitContactForm(prevState: any, data: z.infer<typeof con
     
     await sendEmailNotification(validatedFields.data, 'Contact');
 
-    return { message: 'Your message has been sent successfully!' };
+    return { message: 'Your message has been sent successfully!', errors: null };
   } catch (error) {
     console.error('Error submitting contact form:', error);
     return { message: 'An error occurred while submitting the form.', errors: {} };
@@ -81,11 +81,10 @@ export async function submitContactForm(prevState: any, data: z.infer<typeof con
 }
 
 
-export async function submitSubscriptionQuery(prevState: any, data: z.infer<typeof subscriptionSchema>) {
+export async function submitSubscriptionQuery(data: z.infer<typeof subscriptionSchema>) {
   const validatedFields = subscriptionSchema.safeParse(data);
 
   if (!validatedFields.success) {
-    console.log(validatedFields.error.flatten().fieldErrors);
     return {
       errors: validatedFields.error.flatten().fieldErrors,
       message: 'Validation failed.',
@@ -97,7 +96,7 @@ export async function submitSubscriptionQuery(prevState: any, data: z.infer<type
     const { query, ...rest } = validatedFields.data;
     await addDoc(requestsCollection, {
       ...rest,
-      message: query, // Use the extracted query as the message
+      message: query,
       type: 'Subscription',
       status: 'Requested',
       timestamp: serverTimestamp(),
@@ -105,7 +104,7 @@ export async function submitSubscriptionQuery(prevState: any, data: z.infer<type
 
     await sendEmailNotification(validatedFields.data, 'Subscription');
 
-    return { message: 'Your query has been sent successfully!' };
+    return { message: 'Your query has been sent successfully!', errors: null };
   } catch (error) {
     console.error('Error submitting subscription query:', error);
     return { message: 'An error occurred while submitting the form.', errors: {} };
@@ -142,8 +141,6 @@ export async function runRequestSummary(requestText: string) {
 
 export async function updateRequestStatus(requestId: string, status: string) {
     try {
-        const { doc, updateDoc } = await import('firebase/firestore');
-        const { db } = await import('@/lib/firebase');
         const requestRef = doc(db, 'requests', requestId);
         await updateDoc(requestRef, { status });
         return { success: true };
