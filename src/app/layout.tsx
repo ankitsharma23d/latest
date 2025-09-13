@@ -7,7 +7,7 @@ import Footer from '@/components/layout/footer';
 import LiveChat from '@/components/live-chat';
 
 export const metadata: Metadata = {
-  title: 'InfraSage',
+  title: 'BlockBuddy',
   description: 'AI-powered tools and insights for blockchain infrastructure.',
 };
 

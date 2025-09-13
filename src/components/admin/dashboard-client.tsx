@@ -24,7 +24,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, Timestamp } from 'firebase/firestore';
 import { updateRequestStatus } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -39,7 +39,7 @@ export default function DashboardClient() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const q = query(collection(db, 'requests'), orderBy('timestamp', 'desc'));
+    const q = query(collection(db, 'requests'));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const requestsData: SupportRequest[] = [];
@@ -51,11 +51,15 @@ export default function DashboardClient() {
           email: data.email,
           type: data.type,
           message: data.message,
-          // Convert Firestore Timestamp to JS Date string
+          // Convert Firestore Timestamp to JS Date string, fallback to now
           timestamp: (data.timestamp as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
           status: data.status,
         });
       });
+      
+      // Sort requests by timestamp client-side
+      requestsData.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
       setRequests(requestsData);
       setIsLoading(false);
     }, (error) => {
@@ -173,7 +177,7 @@ export default function DashboardClient() {
                   </DropdownMenu>
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
-                  {formatDistanceToNow(new Date(request.timestamp), { addSuffix: true })}
+                  {request.timestamp ? formatDistanceToNow(new Date(request.timestamp), { addSuffix: true }) : 'N/A'}
                 </TableCell>
                 <TableCell className="max-w-xs truncate">{request.message}</TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
@@ -199,7 +203,7 @@ export default function DashboardClient() {
             ))}
           </TableBody>
         </Table>
-         {requests.length === 0 && (
+         {requests.length === 0 && !isLoading && (
             <div className="text-center p-8 text-muted-foreground">
                 No support requests yet.
             </div>

@@ -1,6 +1,7 @@
 'use server';
 
 import { z } from 'zod';
+import nodemailer from 'nodemailer';
 import { identifyBlockchainProtocol } from '@/ai/flows/identify-blockchain-protocol';
 import { summarizeSupportRequest } from '@/ai/flows/summarize-support-requests';
 import { db } from '@/lib/firebase';
@@ -24,6 +25,15 @@ const subscriptionSchema = z.object({
   query: z.string().min(10, 'Query must be at least 10 characters.'),
 });
 
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_SERVER_HOST,
+  port: Number(process.env.EMAIL_SERVER_PORT),
+  secure: process.env.EMAIL_SERVER_SECURE === 'true',
+  auth: {
+    user: process.env.EMAIL_USERNAME,
+    pass: process.env.EMAIL_PASSWORD,
+  },
+});
 
 export async function submitContactForm(data: z.infer<typeof contactSchema>) {
     const validatedFields = contactSchema.safeParse(data);
@@ -47,6 +57,16 @@ export async function submitContactForm(data: z.infer<typeof contactSchema>) {
 
     try {
         await addDoc(collection(db, 'requests'), docData);
+        
+        const mailOptions = {
+            from: `"BlockBuddy" <${process.env.EMAIL_USERNAME}>`,
+            to: 'sale@blockbuddy.space',
+            subject: 'New Contact Form Submission',
+            text: `You have a new contact form submission:\n\nName: ${name}\nEmail: ${email}\nMessage: ${message}`,
+            html: `<p>You have a new contact form submission:</p><ul><li><strong>Name:</strong> ${name}</li><li><strong>Email:</strong> ${email}</li><li><strong>Message:</strong> ${message}</li></ul>`,
+        };
+        await transporter.sendMail(mailOptions);
+
         return { message: 'Your message has been sent successfully!', errors: null };
     } catch (error) {
         console.error('Error submitting contact form:', error);
@@ -83,6 +103,26 @@ export async function submitSubscriptionQuery(data: z.infer<typeof subscriptionS
     
     try {
         await addDoc(collection(db, 'requests'), docData);
+
+        const mailOptions = {
+            from: `"BlockBuddy" <${process.env.EMAIL_USERNAME}>`,
+            to: 'sale@blockbuddy.space',
+            subject: 'New Subscription Query',
+            text: `You have a new subscription query:\n\nName: ${name}\nEmail: ${email}\nProtocol: ${protocol === 'Other' ? otherProtocol : protocol}\nNetwork Type: ${networkType === 'Other' ? otherNetworkType : networkType}\nNode Type: ${nodeType === 'Other' ? otherNodeType : nodeType}\nQuery: ${query}`,
+            html: `
+                <p>You have a new subscription query:</p>
+                <ul>
+                    <li><strong>Name:</strong> ${name}</li>
+                    <li><strong>Email:</strong> ${email}</li>
+                    <li><strong>Protocol:</strong> ${protocol === 'Other' ? otherProtocol : protocol}</li>
+                    <li><strong>Network Type:</strong> ${networkType === 'Other' ? otherNetworkType : networkType}</li>
+                    <li><strong>Node Type:</strong> ${nodeType === 'Other' ? otherNodeType : nodeType}</li>
+                    <li><strong>Query:</strong> ${query}</li>
+                </ul>
+            `,
+        };
+        await transporter.sendMail(mailOptions);
+        
         return { message: 'Your query has been sent successfully!', errors: null };
     } catch (error) {
         console.error('Error submitting subscription query:', error);

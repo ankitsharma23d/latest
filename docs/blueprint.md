@@ -1,4 +1,4 @@
-# **App Name**: InfraSage
+# **App Name**: BlockBuddy
 
 ## Core Features:
 

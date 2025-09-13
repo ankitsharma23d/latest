@@ -12,7 +12,7 @@ const Logo = ({ className, isLink = true }: LogoProps) => {
     <>
       <Blocks className="h-7 w-7 text-primary" />
       <span className="text-xl font-bold font-headline tracking-tight">
-        InfraSage
+        BlockBuddy
       </span>
     </>
   );
