@@ -1,10 +1,10 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useFormStatus } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useEffect } from 'react';
+import { useEffect, useActionState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,7 +21,7 @@ const subscriptionSchema = z.object({
 });
 
 function SubmitButton() {
-  const { pending } = use-form-status();
+  const { pending } = useFormStatus();
   return (
     <Button type="submit" className="w-full" disabled={pending}>
       {pending ? 'Submitting...' : 'Submit Query'}
@@ -30,7 +30,7 @@ function SubmitButton() {
 }
 
 export default function SubscriptionQueryForm() {
-  const [state, formAction] = useFormState(submitSubscriptionQuery, null);
+  const [state, formAction] = useActionState(submitSubscriptionQuery, null);
   const { toast } = useToast();
 
   const {
