@@ -14,7 +14,9 @@ import {
     Layers,
     Server,
     Zap,
-    Cpu
+    Cpu,
+    Key,
+    Package
 } from 'lucide-react';
 
 export const PROTOCOLS = [
@@ -45,7 +47,8 @@ export const PROTOCOLS = [
   { name: 'Injective', icon: Shield },
   { name: 'Glue', icon: GitBranchPlus },
   { name: 'Nillion', icon: Layers },
-  { name: 'Kilt Unit', icon: Server },
+  { name: 'Kilt', icon: Key },
+  { name: 'Unit', icon: Package },
   { name: 'Theta', icon: Zap },
   { name: 'Stellar', icon: Hexagon },
   { name: 'RPC', icon: Cpu },
