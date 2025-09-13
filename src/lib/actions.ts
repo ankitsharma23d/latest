@@ -27,7 +27,7 @@ const subscriptionSchema = z.object({
 
 export async function submitContactForm(
   data: z.infer<typeof contactSchema>
-) {
+): Promise<{ message: string, errors: any }> {
   const validatedFields = contactSchema.safeParse(data);
 
   if (!validatedFields.success) {
@@ -56,7 +56,7 @@ export async function submitContactForm(
 
 export async function submitSubscriptionQuery(
   data: z.infer<typeof subscriptionSchema>
-) {
+): Promise<{ message: string, errors: any } | undefined> {
   const validatedFields = subscriptionSchema.safeParse(data);
 
   if (!validatedFields.success) {
@@ -69,16 +69,6 @@ export async function submitSubscriptionQuery(
   try {
     const requestsCollection = collection(db, 'requests');
     const { query, ...rest } = validatedFields.data;
-    
-    let message = `
-Subscription Query:
-- Protocol: ${rest.protocol === 'Other' ? rest.otherProtocol : rest.protocol}
-- Network Type: ${rest.networkType === 'Other' ? rest.otherNetworkType : rest.networkType}
-- Node Type: ${rest.nodeType === 'Other' ? rest.otherNodeType : rest.nodeType}
-
-Query:
-${query}
-    `;
 
     await addDoc(requestsCollection, {
       name: rest.name,
