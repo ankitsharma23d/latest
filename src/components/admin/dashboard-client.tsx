@@ -75,7 +75,7 @@ export default function DashboardClient({ initialRequests }: DashboardClientProp
               <TableRow
                 key={request.id}
                 onClick={() => handleRowClick(request)}
-                className="cursor-pointer"
+                className="cursor-pointer hover:bg-muted/80"
               >
                 <TableCell>
                   <div className="font-medium">{request.name}</div>
@@ -89,7 +89,7 @@ export default function DashboardClient({ initialRequests }: DashboardClientProp
                 <TableCell onClick={(e) => e.stopPropagation()}>
                    <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="w-full justify-start text-left font-normal">
+                      <Button variant="outline" size="sm" className="w-full justify-start text-left font-normal">
                         {request.status}
                       </Button>
                     </DropdownMenuTrigger>
