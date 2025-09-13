@@ -99,11 +99,11 @@ export default function SubscriptionQueryForm() {
     <Card>
       <CardContent className="p-6">
         <form
-          onSubmit={handleSubmit((data) => {
+          action={handleSubmit((data) => {
             const formData = new FormData();
             Object.entries(data).forEach(([key, value]) => {
               if (value) {
-                formData.append(key, value);
+                formData.append(key, String(value));
               }
             });
             formAction(formData);
@@ -134,7 +134,7 @@ export default function SubscriptionQueryForm() {
             <Label>Protocol</Label>
             <Select
               onValueChange={(value) => {
-                setValue('protocol', value);
+                setValue('protocol', value, { shouldValidate: true });
                 setSelectedProtocol(value);
               }}
               value={protocolValue}
@@ -172,7 +172,7 @@ export default function SubscriptionQueryForm() {
             <Label>Network Type</Label>
             <Select
               onValueChange={(value) => {
-                setValue('networkType', value);
+                setValue('networkType', value, { shouldValidate: true });
                 setSelectedNetworkType(value);
               }}
               value={networkTypeValue}
@@ -209,7 +209,7 @@ export default function SubscriptionQueryForm() {
             <Label>Node Type</Label>
             <Select
               onValueChange={(value) => {
-                setValue('nodeType', value);
+                setValue('nodeType', value, { shouldValidate: true });
                 setSelectedNodeType(value);
               }}
               value={nodeTypeValue}
