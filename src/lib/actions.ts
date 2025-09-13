@@ -52,7 +52,7 @@ async function sendEmailNotification(data: any, type: 'Contact' | 'Subscription'
     }
 }
 
-export async function submitContactForm(prevState: any, data: z.infer<typeof contactSchema>) {
+export async function submitContactForm(data: z.infer<typeof contactSchema>) {
   const validatedFields = contactSchema.safeParse(data);
 
   if (!validatedFields.success) {
@@ -81,7 +81,7 @@ export async function submitContactForm(prevState: any, data: z.infer<typeof con
 }
 
 
-export async function submitSubscriptionQuery(prevState: any, data: z.infer<typeof subscriptionSchema>) {
+export async function submitSubscriptionQuery(data: z.infer<typeof subscriptionSchema>) {
   const validatedFields = subscriptionSchema.safeParse(data);
 
   if (!validatedFields.success) {

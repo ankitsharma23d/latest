@@ -73,7 +73,7 @@ export default function SubscriptionQueryForm() {
 
   const onSubmit = (data: SubscriptionFormValues) => {
     startTransition(async () => {
-      const result = await submitSubscriptionQuery(null, data);
+      const result = await submitSubscriptionQuery(data);
 
       if (result?.message && !result.errors) {
         toast({

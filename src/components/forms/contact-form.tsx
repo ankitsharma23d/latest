@@ -37,7 +37,7 @@ export default function ContactForm() {
 
   const onSubmit = (data: ContactFormValues) => {
     startTransition(async () => {
-      const state = await submitContactForm(null, data);
+      const state = await submitContactForm(data);
       if (state?.message && !state.errors) {
         toast({
           title: 'Success!',
