@@ -94,22 +94,12 @@ export default function SubscriptionQueryForm() {
       });
     }
   }, [state, toast, reset, setValue]);
-  
-  const onSubmit = (data: SubscriptionFormValues) => {
-    const formData = new FormData();
-    Object.entries(data).forEach(([key, value]) => {
-      if (value) {
-        formData.append(key, value);
-      }
-    });
-    formAction(formData);
-  };
 
   return (
     <Card>
       <CardContent className="p-6">
         <form
-          onSubmit={handleSubmit(onSubmit)}
+          action={formAction}
           className="space-y-4"
         >
           <div className="space-y-2">
@@ -139,6 +129,7 @@ export default function SubscriptionQueryForm() {
                 setValue('protocol', value, { shouldValidate: true });
               }}
               value={protocolValue}
+              name="protocol"
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select a protocol" />
@@ -152,7 +143,6 @@ export default function SubscriptionQueryForm() {
                 <SelectItem value="Other">Other</SelectItem>
               </SelectContent>
             </Select>
-            <input type="hidden" {...register('protocol')} />
             {errors.protocol && (
               <p className="text-sm text-destructive">
                 {errors.protocol.message}
@@ -177,6 +167,7 @@ export default function SubscriptionQueryForm() {
                 setValue('networkType', value, { shouldValidate: true });
               }}
               value={networkTypeValue}
+              name="networkType"
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select a network type" />
@@ -187,7 +178,6 @@ export default function SubscriptionQueryForm() {
                 <SelectItem value="Other">Other</SelectItem>
               </SelectContent>
             </Select>
-            <input type="hidden" {...register('networkType')} />
             {errors.networkType && (
               <p className="text-sm text-destructive">
                 {errors.networkType.message}
@@ -214,6 +204,7 @@ export default function SubscriptionQueryForm() {
                 setValue('nodeType', value, { shouldValidate: true });
               }}
               value={nodeTypeValue}
+              name="nodeType"
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select a node type" />
@@ -226,7 +217,6 @@ export default function SubscriptionQueryForm() {
                 <SelectItem value="Other">Other</SelectItem>
               </SelectContent>
             </Select>
-            <input type="hidden" {...register('nodeType')} />
             {errors.nodeType && (
               <p className="text-sm text-destructive">
                 {errors.nodeType.message}
