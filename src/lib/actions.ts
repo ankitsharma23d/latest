@@ -25,9 +25,7 @@ const subscriptionSchema = z.object({
 });
 
 
-export async function submitContactForm(
-  data: z.infer<typeof contactSchema>
-): Promise<{ message: string, errors: any }> {
+export async function submitContactForm(data: z.infer<typeof contactSchema>) {
   const validatedFields = contactSchema.safeParse(data);
 
   if (!validatedFields.success) {
@@ -54,9 +52,7 @@ export async function submitContactForm(
 }
 
 
-export async function submitSubscriptionQuery(
-  data: z.infer<typeof subscriptionSchema>
-): Promise<{ message: string, errors: any } | undefined> {
+export async function submitSubscriptionQuery(data: z.infer<typeof subscriptionSchema>) {
   const validatedFields = subscriptionSchema.safeParse(data);
 
   if (!validatedFields.success) {
