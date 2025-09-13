@@ -66,15 +66,8 @@ export default function SubscriptionQueryForm() {
   const nodeTypeValue = watch('nodeType');
 
   const processSubmit = (data: SubscriptionFormValues) => {
-    const formData = new FormData();
-    Object.entries(data).forEach(([key, value]) => {
-      if (value) {
-        formData.append(key, value as string);
-      }
-    });
-
     startTransition(async () => {
-      const result = await submitSubscriptionQuery(null, formData);
+      const result = await submitSubscriptionQuery(null, data);
 
       if (result?.message && !result.errors) {
         toast({

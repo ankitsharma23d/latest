@@ -3,7 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useEffect, useTransition } from 'react';
+import { useTransition } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,13 +36,8 @@ export default function ContactForm() {
   });
 
   const onSubmit = (data: ContactFormValues) => {
-    const formData = new FormData();
-    formData.append('name', data.name);
-    formData.append('email', data.email);
-    formData.append('message', data.message);
-
     startTransition(async () => {
-      const state = await submitContactForm(null, formData);
+      const state = await submitContactForm(null, data);
       if (state?.message && !state.errors) {
         toast({
           title: 'Success!',
