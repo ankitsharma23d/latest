@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Logo from '@/components/logo';
 import { Button } from '@/components/ui/button';
@@ -38,8 +38,6 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // This is an insecure mock authentication for demo purposes.
-    // In a real app, use a proper authentication library like NextAuth.js or Clerk.
     const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
     if (!loggedIn) {
       router.replace('/admin/login');
@@ -71,7 +69,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
 
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
+  const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -80,11 +78,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // Avoid rendering auth logic on the server
   if (!isClient) {
-    return null;
+    // Render a static loading shell on the server
+    return (
+         <div className="p-8">
+            <Skeleton className="h-16 w-full mb-8" />
+            <Skeleton className="h-8 w-1/4 mb-8" />
+            <div className="space-y-4">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+            </div>
+        </div>
+    );
   }
 
   // A special case for the login page itself to avoid recursive checks
-  if (typeof window !== 'undefined' && window.location.pathname === '/admin/login') {
+  if (pathname === '/admin/login') {
     return <>{children}</>;
   }
 

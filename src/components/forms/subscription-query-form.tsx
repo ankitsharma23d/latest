@@ -1,10 +1,9 @@
 'use client';
 
-import { useFormStatus } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useEffect, useState, useTransition } from 'react';
+import { useTransition } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,15 +35,6 @@ const subscriptionSchema = z.object({
 
 type SubscriptionFormValues = z.infer<typeof subscriptionSchema>;
 
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" className="w-full" disabled={pending}>
-      {pending ? 'Submitting...' : 'Submit Query'}
-    </Button>
-  );
-}
-
 export default function SubscriptionQueryForm() {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -56,7 +46,6 @@ export default function SubscriptionQueryForm() {
     reset,
     setValue,
     watch,
-    control
   } = useForm<SubscriptionFormValues>({
     resolver: zodResolver(subscriptionSchema),
     defaultValues: {
@@ -76,43 +65,37 @@ export default function SubscriptionQueryForm() {
   const networkTypeValue = watch('networkType');
   const nodeTypeValue = watch('nodeType');
 
-  const processSubmit = async (data: SubscriptionFormValues) => {
+  const processSubmit = (data: SubscriptionFormValues) => {
     const formData = new FormData();
     Object.entries(data).forEach(([key, value]) => {
-        if (value) {
-            formData.append(key, value);
-        }
+      if (value) {
+        formData.append(key, value as string);
+      }
     });
 
     startTransition(async () => {
-        const result = await submitSubscriptionQuery(null, formData);
+      const result = await submitSubscriptionQuery(null, formData);
 
-        if (result?.message && !result.errors) {
-            toast({
-                title: 'Success!',
-                description: result.message,
-            });
-            reset();
-            setValue('protocol', '');
-            setValue('networkType', '');
-            setValue('nodeType', '');
-        } else if (result?.message && result.errors) {
-            toast({
-                title: 'Error',
-                description: result.message,
-                variant: 'destructive',
-            });
-        }
+      if (result?.message && !result.errors) {
+        toast({
+          title: 'Success!',
+          description: result.message,
+        });
+        reset();
+      } else if (result?.message && result.errors) {
+        toast({
+          title: 'Error',
+          description: result.message,
+          variant: 'destructive',
+        });
+      }
     });
-  }
+  };
 
   return (
     <Card>
       <CardContent className="p-6">
-        <form
-          onSubmit={handleSubmit(processSubmit)}
-          className="space-y-4"
-        >
+        <form onSubmit={handleSubmit(processSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
             <Input id="name" {...register('name')} placeholder="Your Name" disabled={isPending} />
@@ -137,9 +120,7 @@ export default function SubscriptionQueryForm() {
           <div className="space-y-2">
             <Label>Protocol</Label>
             <Select
-              onValueChange={(value) => {
-                setValue('protocol', value, { shouldValidate: true });
-              }}
+              onValueChange={(value) => setValue('protocol', value, { shouldValidate: true })}
               value={protocolValue}
               name="protocol"
               disabled={isPending}
@@ -157,9 +138,7 @@ export default function SubscriptionQueryForm() {
               </SelectContent>
             </Select>
             {errors.protocol && (
-              <p className="text-sm text-destructive">
-                {errors.protocol.message}
-              </p>
+              <p className="text-sm text-destructive">{errors.protocol.message}</p>
             )}
             {protocolValue === 'Other' && (
               <div className="space-y-2 pt-2">
@@ -177,9 +156,7 @@ export default function SubscriptionQueryForm() {
           <div className="space-y-2">
             <Label>Network Type</Label>
             <Select
-              onValueChange={(value) => {
-                setValue('networkType', value, { shouldValidate: true });
-              }}
+              onValueChange={(value) => setValue('networkType', value, { shouldValidate: true })}
               value={networkTypeValue}
               name="networkType"
               disabled={isPending}
@@ -194,15 +171,11 @@ export default function SubscriptionQueryForm() {
               </SelectContent>
             </Select>
             {errors.networkType && (
-              <p className="text-sm text-destructive">
-                {errors.networkType.message}
-              </p>
+              <p className="text-sm text-destructive">{errors.networkType.message}</p>
             )}
             {networkTypeValue === 'Other' && (
               <div className="space-y-2 pt-2">
-                <Label htmlFor="otherNetworkType">
-                  Please specify network type
-                </Label>
+                <Label htmlFor="otherNetworkType">Please specify network type</Label>
                 <Input
                   id="otherNetworkType"
                   {...register('otherNetworkType')}
@@ -212,13 +185,11 @@ export default function SubscriptionQueryForm() {
               </div>
             )}
           </div>
-          
+
           <div className="space-y-2">
             <Label>Node Type</Label>
             <Select
-              onValueChange={(value) => {
-                setValue('nodeType', value, { shouldValidate: true });
-              }}
+              onValueChange={(value) => setValue('nodeType', value, { shouldValidate: true })}
               value={nodeTypeValue}
               name="nodeType"
               disabled={isPending}
@@ -235,11 +206,9 @@ export default function SubscriptionQueryForm() {
               </SelectContent>
             </Select>
             {errors.nodeType && (
-              <p className="text-sm text-destructive">
-                {errors.nodeType.message}
-              </p>
+              <p className="text-sm text-destructive">{errors.nodeType.message}</p>
             )}
-             {nodeTypeValue === 'Other' && (
+            {nodeTypeValue === 'Other' && (
               <div className="space-y-2 pt-2">
                 <Label htmlFor="otherNodeType">Please specify node type</Label>
                 <Input
@@ -262,14 +231,12 @@ export default function SubscriptionQueryForm() {
               disabled={isPending}
             />
             {errors.query && (
-              <p className="text-sm text-destructive">
-                {errors.query.message}
-              </p>
+              <p className="text-sm text-destructive">{errors.query.message}</p>
             )}
           </div>
           <Button type="submit" className="w-full" disabled={isPending}>
             {isPending ? 'Submitting...' : 'Submit Query'}
-        </Button>
+          </Button>
         </form>
       </CardContent>
     </Card>

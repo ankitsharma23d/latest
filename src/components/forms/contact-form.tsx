@@ -1,10 +1,9 @@
 'use client';
 
-import { useFormStatus } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useEffect, useActionState } from 'react';
+import { useEffect, useTransition } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,59 +19,60 @@ const contactSchema = z.object({
   message: z.string().min(10, 'Message must be at least 10 characters.'),
 });
 
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" className="w-full" disabled={pending}>
-      {pending ? 'Sending...' : 'Send Message'}
-    </Button>
-  );
-}
+type ContactFormValues = z.infer<typeof contactSchema>;
 
 export default function ContactForm() {
-  const [state, formAction] = useActionState(submitContactForm, null);
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm({
+  } = useForm<ContactFormValues>({
     resolver: zodResolver(contactSchema),
     defaultValues: { name: '', email: '', message: '' },
   });
-  
-  useEffect(() => {
-    if (state?.message && !state.errors) {
-      toast({
-        title: 'Success!',
-        description: state.message,
-      });
-      reset();
-    } else if (state?.message && state.errors) {
-       toast({
-        title: 'Error',
-        description: state.message,
-        variant: 'destructive',
-      });
-    }
-  }, [state, toast, reset]);
-  
+
+  const onSubmit = (data: ContactFormValues) => {
+    const formData = new FormData();
+    formData.append('name', data.name);
+    formData.append('email', data.email);
+    formData.append('message', data.message);
+
+    startTransition(async () => {
+      const state = await submitContactForm(null, formData);
+      if (state?.message && !state.errors) {
+        toast({
+          title: 'Success!',
+          description: state.message,
+        });
+        reset();
+      } else if (state?.message && state.errors) {
+        toast({
+          title: 'Error',
+          description: state.message,
+          variant: 'destructive',
+        });
+      }
+    });
+  };
+
   return (
     <Card>
       <CardContent className="p-6">
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
-            <Input id="name" {...register('name')} placeholder="Your Name" />
+            <Input id="name" {...register('name')} placeholder="Your Name" disabled={isPending} />
             {errors.name && (
               <p className="text-sm text-destructive">{errors.name.message}</p>
             )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" {...register('email')} placeholder="your@email.com" />
+            <Input id="email" type="email" {...register('email')} placeholder="your@email.com" disabled={isPending} />
             {errors.email && (
               <p className="text-sm text-destructive">{errors.email.message}</p>
             )}
@@ -84,12 +84,15 @@ export default function ContactForm() {
               {...register('message')}
               placeholder="How can we help you?"
               rows={5}
+              disabled={isPending}
             />
             {errors.message && (
               <p className="text-sm text-destructive">{errors.message.message}</p>
             )}
           </div>
-          <SubmitButton />
+          <Button type="submit" className="w-full" disabled={isPending}>
+            {isPending ? 'Sending...' : 'Send Message'}
+          </Button>
         </form>
       </CardContent>
     </Card>
