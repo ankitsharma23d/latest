@@ -4,8 +4,7 @@ import { useFormStatus } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useEffect } from 'react';
-import { useActionState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,8 +46,8 @@ function SubmitButton() {
 }
 
 export default function SubscriptionQueryForm() {
-  const [state, formAction] = useActionState(submitSubscriptionQuery, null);
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
 
   const {
     register,
@@ -57,6 +56,7 @@ export default function SubscriptionQueryForm() {
     reset,
     setValue,
     watch,
+    control
   } = useForm<SubscriptionFormValues>({
     resolver: zodResolver(subscriptionSchema),
     defaultValues: {
@@ -76,35 +76,46 @@ export default function SubscriptionQueryForm() {
   const networkTypeValue = watch('networkType');
   const nodeTypeValue = watch('nodeType');
 
-  useEffect(() => {
-    if (state?.message && !state.errors) {
-      toast({
-        title: 'Success!',
-        description: state.message,
-      });
-      reset();
-      setValue('protocol', '');
-      setValue('networkType', '');
-      setValue('nodeType', '');
-    } else if (state?.message && state.errors) {
-      toast({
-        title: 'Error',
-        description: state.message,
-        variant: 'destructive',
-      });
-    }
-  }, [state, toast, reset, setValue]);
+  const processSubmit = async (data: SubscriptionFormValues) => {
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, value]) => {
+        if (value) {
+            formData.append(key, value);
+        }
+    });
+
+    startTransition(async () => {
+        const result = await submitSubscriptionQuery(null, formData);
+
+        if (result?.message && !result.errors) {
+            toast({
+                title: 'Success!',
+                description: result.message,
+            });
+            reset();
+            setValue('protocol', '');
+            setValue('networkType', '');
+            setValue('nodeType', '');
+        } else if (result?.message && result.errors) {
+            toast({
+                title: 'Error',
+                description: result.message,
+                variant: 'destructive',
+            });
+        }
+    });
+  }
 
   return (
     <Card>
       <CardContent className="p-6">
         <form
-          action={formAction}
+          onSubmit={handleSubmit(processSubmit)}
           className="space-y-4"
         >
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
-            <Input id="name" {...register('name')} placeholder="Your Name" />
+            <Input id="name" {...register('name')} placeholder="Your Name" disabled={isPending} />
             {errors.name && (
               <p className="text-sm text-destructive">{errors.name.message}</p>
             )}
@@ -116,6 +127,7 @@ export default function SubscriptionQueryForm() {
               type="email"
               {...register('email')}
               placeholder="your@email.com"
+              disabled={isPending}
             />
             {errors.email && (
               <p className="text-sm text-destructive">{errors.email.message}</p>
@@ -130,6 +142,7 @@ export default function SubscriptionQueryForm() {
               }}
               value={protocolValue}
               name="protocol"
+              disabled={isPending}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select a protocol" />
@@ -155,6 +168,7 @@ export default function SubscriptionQueryForm() {
                   id="otherProtocol"
                   {...register('otherProtocol')}
                   placeholder="e.g., Bitcoin"
+                  disabled={isPending}
                 />
               </div>
             )}
@@ -168,6 +182,7 @@ export default function SubscriptionQueryForm() {
               }}
               value={networkTypeValue}
               name="networkType"
+              disabled={isPending}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select a network type" />
@@ -192,6 +207,7 @@ export default function SubscriptionQueryForm() {
                   id="otherNetworkType"
                   {...register('otherNetworkType')}
                   placeholder="e.g., Devnet"
+                  disabled={isPending}
                 />
               </div>
             )}
@@ -205,6 +221,7 @@ export default function SubscriptionQueryForm() {
               }}
               value={nodeTypeValue}
               name="nodeType"
+              disabled={isPending}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select a node type" />
@@ -229,6 +246,7 @@ export default function SubscriptionQueryForm() {
                   id="otherNodeType"
                   {...register('otherNodeType')}
                   placeholder="e.g., Full Node"
+                  disabled={isPending}
                 />
               </div>
             )}
@@ -241,6 +259,7 @@ export default function SubscriptionQueryForm() {
               {...register('query')}
               placeholder="What are your questions about our subscription plans?"
               rows={5}
+              disabled={isPending}
             />
             {errors.query && (
               <p className="text-sm text-destructive">
@@ -248,7 +267,9 @@ export default function SubscriptionQueryForm() {
               </p>
             )}
           </div>
-          <SubmitButton />
+          <Button type="submit" className="w-full" disabled={isPending}>
+            {isPending ? 'Submitting...' : 'Submit Query'}
+        </Button>
         </form>
       </CardContent>
     </Card>
