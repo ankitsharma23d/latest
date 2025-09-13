@@ -25,35 +25,11 @@ const subscriptionSchema = z.object({
 });
 
 
-async function sendEmailNotification(data: any, type: 'Contact' | 'Subscription') {
-    try {
-        const mailCollection = collection(db, 'mail');
-        await addDoc(mailCollection, {
-            to: ['sale@blockbuddy.space'],
-            message: {
-                subject: `New ${type} Form Submission from ${data.name}`,
-                html: `
-                    <h1>New ${type} Submission</h1>
-                    <p><strong>Name:</strong> ${data.name}</p>
-                    <p><strong>Email:</strong> ${data.email}</p>
-                    ${type === 'Subscription' ? `
-                        <p><strong>Protocol:</strong> ${data.protocol === 'Other' ? data.otherProtocol : data.protocol}</p>
-                        <p><strong>Network Type:</strong> ${data.networkType === 'Other' ? data.otherNetworkType : data.networkType}</p>
-                        <p><strong>Node Type:</strong> ${data.nodeType === 'Other' ? data.otherNodeType : data.nodeType}</p>
-                        <p><strong>Query:</strong> ${data.query}</p>
-                    ` : `
-                        <p><strong>Message:</strong> ${data.message}</p>
-                    `}
-                `,
-            },
-        });
-        console.log('Email notification entry created.');
-    } catch (error) {
-        console.error('Error creating email notification entry:', error);
-    }
-}
-
-export async function submitContactForm(data: z.infer<typeof contactSchema>) {
+export async function submitContactForm(
+  prevState: { message: string; errors: any } | null,
+  formData: FormData
+) {
+  const data = Object.fromEntries(formData.entries());
   const validatedFields = contactSchema.safeParse(data);
 
   if (!validatedFields.success) {
@@ -72,8 +48,6 @@ export async function submitContactForm(data: z.infer<typeof contactSchema>) {
       timestamp: serverTimestamp(),
     });
     
-    await sendEmailNotification(validatedFields.data, 'Contact');
-
     return { message: 'Your message has been sent successfully!', errors: null };
   } catch (error) {
     console.error('Error submitting contact form:', error);
@@ -82,7 +56,11 @@ export async function submitContactForm(data: z.infer<typeof contactSchema>) {
 }
 
 
-export async function submitSubscriptionQuery(data: z.infer<typeof subscriptionSchema>) {
+export async function submitSubscriptionQuery(
+  prevState: { message: string; errors: any } | null,
+  formData: FormData
+) {
+  const data = Object.fromEntries(formData.entries());
   const validatedFields = subscriptionSchema.safeParse(data);
 
   if (!validatedFields.success) {
@@ -102,8 +80,6 @@ export async function submitSubscriptionQuery(data: z.infer<typeof subscriptionS
       status: 'Requested',
       timestamp: serverTimestamp(),
     });
-
-    await sendEmailNotification(validatedFields.data, 'Subscription');
 
     return { message: 'Your query has been sent successfully!', errors: null };
   } catch (error) {
