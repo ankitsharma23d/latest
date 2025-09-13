@@ -3,7 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useTransition } from 'react';
+import { useTransition, useState, useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { PROTOCOLS } from '@/lib/data';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const subscriptionSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -38,6 +39,11 @@ type SubscriptionFormValues = z.infer<typeof subscriptionSchema>;
 export default function SubscriptionQueryForm() {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const {
     register,
@@ -65,7 +71,7 @@ export default function SubscriptionQueryForm() {
   const networkTypeValue = watch('networkType');
   const nodeTypeValue = watch('nodeType');
 
-  const processSubmit = (data: SubscriptionFormValues) => {
+  const onSubmit = (data: SubscriptionFormValues) => {
     startTransition(async () => {
       const result = await submitSubscriptionQuery(null, data);
 
@@ -85,10 +91,24 @@ export default function SubscriptionQueryForm() {
     });
   };
 
+  if (!isClient) {
+    return (
+      <Card>
+        <CardContent className="p-6 space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardContent className="p-6">
-        <form onSubmit={handleSubmit(processSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
             <Input id="name" {...register('name')} placeholder="Your Name" disabled={isPending} />

@@ -97,7 +97,7 @@ export async function submitSubscriptionQuery(prevState: any, data: z.infer<type
     const { query, ...rest } = validatedFields.data;
     await addDoc(requestsCollection, {
       ...rest,
-      message: query,
+      message: query, // Use the extracted query as the message
       type: 'Subscription',
       status: 'Requested',
       timestamp: serverTimestamp(),
