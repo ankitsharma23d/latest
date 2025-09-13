@@ -35,17 +35,18 @@ export async function submitContactForm(data: z.infer<typeof contactSchema>) {
         };
     }
 
+    const { name, email, message } = validatedFields.data;
+    const docData = {
+        name,
+        email,
+        message,
+        type: 'Contact',
+        status: 'Requested',
+        timestamp: serverTimestamp(),
+    };
+
     try {
-        const { name, email, message } = validatedFields.data;
-        await addDoc(collection(db, 'requests'), {
-            name,
-            email,
-            message,
-            type: 'Contact',
-            status: 'Requested',
-            timestamp: serverTimestamp(),
-        });
-        
+        await addDoc(collection(db, 'requests'), docData);
         return { message: 'Your message has been sent successfully!', errors: null };
     } catch (error) {
         console.error('Error submitting contact form:', error);
@@ -64,23 +65,24 @@ export async function submitSubscriptionQuery(data: z.infer<typeof subscriptionS
         };
     }
     
+    const { name, email, query, protocol, otherProtocol, networkType, otherNetworkType, nodeType, otherNodeType } = validatedFields.data;
+    const docData = {
+        name,
+        email,
+        message: query,
+        protocol,
+        otherProtocol: otherProtocol || '',
+        networkType,
+        otherNetworkType: otherNetworkType || '',
+        nodeType,
+        otherNodeType: otherNodeType || '',
+        type: 'Subscription',
+        status: 'Requested',
+        timestamp: serverTimestamp(),
+    };
+    
     try {
-        const { name, email, query, protocol, otherProtocol, networkType, otherNetworkType, nodeType, otherNodeType } = validatedFields.data;
-        await addDoc(collection(db, 'requests'), {
-            name,
-            email,
-            message: query,
-            protocol,
-            otherProtocol: otherProtocol || '',
-            networkType,
-            otherNetworkType: otherNetworkType || '',
-            nodeType,
-            otherNodeType: otherNodeType || '',
-            type: 'Subscription',
-            status: 'Requested',
-            timestamp: serverTimestamp(),
-        });
-
+        await addDoc(collection(db, 'requests'), docData);
         return { message: 'Your query has been sent successfully!', errors: null };
     } catch (error) {
         console.error('Error submitting subscription query:', error);
