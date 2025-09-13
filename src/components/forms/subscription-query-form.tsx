@@ -4,7 +4,8 @@ import { useFormStatus } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useEffect, useActionState, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useActionState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,9 +47,6 @@ function SubmitButton() {
 export default function SubscriptionQueryForm() {
   const [state, formAction] = useActionState(submitSubscriptionQuery, null);
   const { toast } = useToast();
-  const [selectedProtocol, setSelectedProtocol] = useState('');
-  const [selectedNetworkType, setSelectedNetworkType] = useState('');
-  const [selectedNodeType, setSelectedNodeType] = useState('');
 
   const {
     register,
@@ -83,9 +81,9 @@ export default function SubscriptionQueryForm() {
         description: state.message,
       });
       reset();
-      setSelectedProtocol('');
-      setSelectedNetworkType('');
-      setSelectedNodeType('');
+      setValue('protocol', '');
+      setValue('networkType', '');
+      setValue('nodeType', '');
     } else if (state?.message && state.errors) {
       toast({
         title: 'Error',
@@ -93,21 +91,13 @@ export default function SubscriptionQueryForm() {
         variant: 'destructive',
       });
     }
-  }, [state, toast, reset]);
+  }, [state, toast, reset, setValue]);
 
   return (
     <Card>
       <CardContent className="p-6">
         <form
-          action={handleSubmit((data) => {
-            const formData = new FormData();
-            Object.entries(data).forEach(([key, value]) => {
-              if (value) {
-                formData.append(key, String(value));
-              }
-            });
-            formAction(formData);
-          })}
+          action={formAction}
           className="space-y-4"
         >
           <div className="space-y-2">
@@ -132,10 +122,12 @@ export default function SubscriptionQueryForm() {
 
           <div className="space-y-2">
             <Label>Protocol</Label>
+            <select name="protocol" hidden {...register('protocol')}>
+                <option value={protocolValue} />
+            </select>
             <Select
               onValueChange={(value) => {
                 setValue('protocol', value, { shouldValidate: true });
-                setSelectedProtocol(value);
               }}
               value={protocolValue}
             >
@@ -170,10 +162,12 @@ export default function SubscriptionQueryForm() {
 
           <div className="space-y-2">
             <Label>Network Type</Label>
+            <select name="networkType" hidden {...register('networkType')}>
+                <option value={networkTypeValue} />
+            </select>
             <Select
               onValueChange={(value) => {
                 setValue('networkType', value, { shouldValidate: true });
-                setSelectedNetworkType(value);
               }}
               value={networkTypeValue}
             >
@@ -207,10 +201,12 @@ export default function SubscriptionQueryForm() {
           
           <div className="space-y-2">
             <Label>Node Type</Label>
+            <select name="nodeType" hidden {...register('nodeType')}>
+                <option value={nodeTypeValue} />
+            </select>
             <Select
               onValueChange={(value) => {
                 setValue('nodeType', value, { shouldValidate: true });
-                setSelectedNodeType(value);
               }}
               value={nodeTypeValue}
             >

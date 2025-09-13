@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { SupportRequest, Status } from '@/lib/types';
 import { STATUSES } from '@/lib/types';
 import {
@@ -23,16 +23,54 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { db } from '@/lib/firebase';
+import { collection, onSnapshot, query, orderBy, Timestamp } from 'firebase/firestore';
+import { updateRequestStatus } from '@/lib/actions';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
-type DashboardClientProps = {
-  initialRequests: SupportRequest[];
-};
 
-export default function DashboardClient({ initialRequests }: DashboardClientProps) {
-  const [requests, setRequests] = useState<SupportRequest[]>(initialRequests);
+export default function DashboardClient() {
+  const [requests, setRequests] = useState<SupportRequest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<SupportRequest | null>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const q = query(collection(db, 'requests'), orderBy('timestamp', 'desc'));
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const requestsData: SupportRequest[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        requestsData.push({
+          id: doc.id,
+          name: data.name,
+          email: data.email,
+          type: data.type,
+          message: data.message,
+          // Convert Firestore Timestamp to JS Date string
+          timestamp: (data.timestamp as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
+          status: data.status,
+        });
+      });
+      setRequests(requestsData);
+      setIsLoading(false);
+    }, (error) => {
+        console.error("Error fetching requests:", error);
+        toast({
+            title: "Error",
+            description: "Failed to fetch support requests.",
+            variant: "destructive"
+        });
+        setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [toast]);
+
 
   const handleSummarizeClick = (e: React.MouseEvent, request: SupportRequest) => {
     e.stopPropagation();
@@ -45,16 +83,45 @@ export default function DashboardClient({ initialRequests }: DashboardClientProp
     setIsDetailsModalOpen(true);
   };
 
-  const handleStatusChange = (requestId: string, newStatus: Status) => {
-    // In a real app, you'd call an API to update the status in your database.
-    // For this demo, we'll just update the local state.
-    console.log(`Updating request ${requestId} to status: ${newStatus}`);
+  const handleStatusChange = async (requestId: string, newStatus: Status) => {
+    const originalRequests = [...requests];
+    // Optimistically update the UI
     setRequests((prevRequests) =>
       prevRequests.map((req) =>
         req.id === requestId ? { ...req, status: newStatus } : req
       )
     );
+
+    const result = await updateRequestStatus(requestId, newStatus);
+
+    if (!result.success) {
+      // Revert the change if the update fails
+      setRequests(originalRequests);
+      toast({
+        title: 'Update Failed',
+        description: 'Could not update the request status.',
+        variant: 'destructive',
+      });
+    } else {
+         toast({
+            title: 'Status Updated',
+            description: `Request status changed to "${newStatus}".`,
+        });
+    }
   };
+  
+    if (isLoading) {
+        return (
+            <div className="border rounded-lg p-4">
+                 <div className="space-y-3">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                </div>
+            </div>
+        )
+    }
 
   return (
     <>
@@ -75,7 +142,7 @@ export default function DashboardClient({ initialRequests }: DashboardClientProp
               <TableRow
                 key={request.id}
                 onClick={() => handleRowClick(request)}
-                className="cursor-pointer hover:bg-muted/80"
+                className="cursor-pointer hover:bg-card transition-colors"
               >
                 <TableCell>
                   <div className="font-medium">{request.name}</div>
@@ -89,7 +156,7 @@ export default function DashboardClient({ initialRequests }: DashboardClientProp
                 <TableCell onClick={(e) => e.stopPropagation()}>
                    <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="w-full justify-start text-left font-normal">
+                      <Button variant="outline" size="sm" className="w-full justify-start text-left font-normal min-w-[150px]">
                         {request.status}
                       </Button>
                     </DropdownMenuTrigger>
@@ -132,6 +199,11 @@ export default function DashboardClient({ initialRequests }: DashboardClientProp
             ))}
           </TableBody>
         </Table>
+         {requests.length === 0 && (
+            <div className="text-center p-8 text-muted-foreground">
+                No support requests yet.
+            </div>
+        )}
       </div>
       <RequestSummaryModal
         isOpen={isSummaryModalOpen}
