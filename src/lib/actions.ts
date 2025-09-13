@@ -36,10 +36,11 @@ export async function submitContactForm(data: z.infer<typeof contactSchema>) {
     }
 
     try {
+        const { name, email, message } = validatedFields.data;
         await addDoc(collection(db, 'requests'), {
-            name: validatedFields.data.name,
-            email: validatedFields.data.email,
-            message: validatedFields.data.message,
+            name,
+            email,
+            message,
             type: 'Contact',
             status: 'Requested',
             timestamp: serverTimestamp(),
@@ -48,7 +49,7 @@ export async function submitContactForm(data: z.infer<typeof contactSchema>) {
         return { message: 'Your message has been sent successfully!', errors: null };
     } catch (error) {
         console.error('Error submitting contact form:', error);
-        return { message: 'An error occurred while submitting the form.', errors: {} };
+        return { message: 'An error occurred while submitting the form.', errors: { _form: ['Server error'] } };
     }
 }
 
@@ -64,16 +65,17 @@ export async function submitSubscriptionQuery(data: z.infer<typeof subscriptionS
     }
     
     try {
+        const { name, email, query, protocol, otherProtocol, networkType, otherNetworkType, nodeType, otherNodeType } = validatedFields.data;
         await addDoc(collection(db, 'requests'), {
-            name: validatedFields.data.name,
-            email: validatedFields.data.email,
-            message: validatedFields.data.query,
-            protocol: validatedFields.data.protocol,
-            otherProtocol: validatedFields.data.otherProtocol || '',
-            networkType: validatedFields.data.networkType,
-            otherNetworkType: validatedFields.data.otherNetworkType || '',
-            nodeType: validatedFields.data.nodeType,
-            otherNodeType: validatedFields.data.otherNodeType || '',
+            name,
+            email,
+            message: query,
+            protocol,
+            otherProtocol: otherProtocol || '',
+            networkType,
+            otherNetworkType: otherNetworkType || '',
+            nodeType,
+            otherNodeType: otherNodeType || '',
             type: 'Subscription',
             status: 'Requested',
             timestamp: serverTimestamp(),
@@ -82,7 +84,7 @@ export async function submitSubscriptionQuery(data: z.infer<typeof subscriptionS
         return { message: 'Your query has been sent successfully!', errors: null };
     } catch (error) {
         console.error('Error submitting subscription query:', error);
-        return { message: 'An error occurred while submitting the form.', errors: {} };
+        return { message: 'An error occurred while submitting the form.', errors: { _form: ['Server error'] } };
     }
 }
 
