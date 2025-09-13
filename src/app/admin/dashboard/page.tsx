@@ -10,7 +10,7 @@ export default function AdminDashboardPage() {
       <h1 className="text-3xl font-bold tracking-tight mb-8 font-headline">
         Admin Dashboard
       </h1>
-      <DashboardClient requests={requests} />
+      <DashboardClient initialRequests={requests} />
     </div>
   );
 }

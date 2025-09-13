@@ -61,6 +61,7 @@ export const MOCK_REQUESTS: SupportRequest[] = [
     type: 'Subscription',
     message: "I'm interested in the enterprise plan but I have a few questions about the number of API calls included. Can someone from sales reach out to me? We're a team of 50 developers.",
     timestamp: '2024-07-20T10:30:00Z',
+    status: 'Requested',
   },
   {
     id: 'REQ-002',
@@ -69,6 +70,7 @@ export const MOCK_REQUESTS: SupportRequest[] = [
     type: 'Contact',
     message: 'Hello, I am trying to integrate your service with a new DeFi project on the Polygon network. I am running into some authentication issues with the testnet credentials. The documentation is a bit unclear on the required headers. Could you please provide some clarification?',
     timestamp: '2024-07-20T09:15:00Z',
+    status: 'Requested',
   },
   {
     id: 'REQ-003',
@@ -77,6 +79,7 @@ export const MOCK_REQUESTS: SupportRequest[] = [
     type: 'Contact',
     message: 'My API key seems to have been compromised. I need to disable the old one and generate a new one immediately. Please guide me through the process as this is urgent.',
     timestamp: '2024-07-19T18:45:00Z',
+    status: 'Requested',
   },
   {
     id: 'REQ-004',
@@ -85,6 +88,7 @@ export const MOCK_REQUESTS: SupportRequest[] = [
     type: 'Subscription',
     message: 'We are a startup building a cross-chain bridge and we need a reliable RPC provider. We need support for Ethereum, Base, and Arbitrum. What are your pricing options for high-volume requests across multiple chains?',
     timestamp: '2024-07-19T14:00:00Z',
+    status: 'Requested',
   },
     {
     id: 'REQ-005',
@@ -93,5 +97,6 @@ export const MOCK_REQUESTS: SupportRequest[] = [
     type: 'Contact',
     message: 'The latency for my requests to the Solana endpoint seems higher than usual over the past 24 hours. Is there an ongoing issue or maintenance? My application performance is being affected.',
     timestamp: '2024-07-21T11:00:00Z',
+    status: 'Requested',
   },
 ];
