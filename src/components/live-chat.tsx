@@ -60,6 +60,14 @@ const LiveChat = () => {
     const unsubscribe = onSnapshot(q, 
       (querySnapshot) => {
         const newMessages = querySnapshot.docs.map(doc => doc.data() as Message);
+        
+        // CORRECTED LOGIC:
+        // If it's a restored session with no messages, add the initial agent message.
+        if (newMessages.length === 0 && userName) {
+            // @ts-ignore
+            newMessages.push({ sender: 'agent', text: `Hi ${userName}! How can I help you today?`, timestamp: Timestamp.now() });
+        }
+
         setMessages(newMessages);
         setConnectionStatus('connected');
       },
@@ -70,7 +78,7 @@ const LiveChat = () => {
     );
 
     return () => unsubscribe();
-  }, [chatId]);
+  }, [chatId, userName]); // Added userName dependency
 
   // Auto-scroll to the latest message
   useEffect(() => {
@@ -93,6 +101,7 @@ const LiveChat = () => {
         
         setChatId(result.chatId);
         setStep('chat');
+        // This is still needed for brand new chats
         // @ts-ignore
         setMessages([ { sender: 'agent', text: `Hi ${userName}! How can I help you today?`, timestamp: Timestamp.now() } ]);
       } else {
