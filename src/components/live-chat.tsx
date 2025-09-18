@@ -39,6 +39,18 @@ const LiveChat = () => {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
+  // Restore chat session from localStorage on component mount
+  useEffect(() => {
+    const storedChatId = localStorage.getItem('liveChatId');
+    const storedUserName = localStorage.getItem('liveChatUserName');
+    if (storedChatId && storedUserName) {
+      setChatId(storedChatId);
+      setUserName(storedUserName);
+      setStep('chat');
+    }
+  }, []); // Empty dependency array ensures this runs only once on mount
+
+  // Firebase listener for new messages
   useEffect(() => {
     if (!chatId) return;
 
@@ -48,6 +60,14 @@ const LiveChat = () => {
     const unsubscribe = onSnapshot(q, 
       (querySnapshot) => {
         const newMessages = querySnapshot.docs.map(doc => doc.data() as Message);
+        
+        // CORRECTED LOGIC:
+        // If it's a restored session with no messages, add the initial agent message.
+        if (newMessages.length === 0 && userName) {
+            // @ts-ignore
+            newMessages.push({ sender: 'agent', text: `Hi ${userName}! How can I help you today?`, timestamp: Timestamp.now() });
+        }
+
         setMessages(newMessages);
         setConnectionStatus('connected');
       },
@@ -58,8 +78,9 @@ const LiveChat = () => {
     );
 
     return () => unsubscribe();
-  }, [chatId]);
+  }, [chatId, userName]); // Added userName dependency
 
+  // Auto-scroll to the latest message
   useEffect(() => {
     if (scrollAreaRef.current) {
       const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
@@ -74,8 +95,13 @@ const LiveChat = () => {
     if (userName && userEmail) {
       const result = await startChatSession({ name: userName, email: userEmail });
       if (result.success && result.chatId) {
+        // Save session to localStorage
+        localStorage.setItem('liveChatId', result.chatId);
+        localStorage.setItem('liveChatUserName', userName);
+        
         setChatId(result.chatId);
         setStep('chat');
+        // This is still needed for brand new chats
         // @ts-ignore
         setMessages([ { sender: 'agent', text: `Hi ${userName}! How can I help you today?`, timestamp: Timestamp.now() } ]);
       } else {
@@ -101,7 +127,11 @@ const LiveChat = () => {
     setIsSending(false);
   };
 
-  const resetChat = () => {
+  // Explicitly end the chat session and clear localStorage
+  const endChatSession = () => {
+    localStorage.removeItem('liveChatId');
+    localStorage.removeItem('liveChatUserName');
+    
     setIsOpen(false);
     setTimeout(() => {
       setStep('details');
@@ -109,7 +139,7 @@ const LiveChat = () => {
       setUserName('');
       setUserEmail('');
       setChatId(null);
-    }, 300);
+    }, 300); // Allow sheet to animate out
   };
 
   return (
@@ -121,10 +151,19 @@ const LiveChat = () => {
       >
         <MessageSquare className="h-6 w-6" />
       </Button>
-      <Sheet open={isOpen} onOpenChange={(open) => !open && resetChat()}>
+      {/* Changed onOpenChange to only control the open state */}
+      <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetContent className="flex flex-col">
           <SheetHeader>
-            <SheetTitle>Live Support</SheetTitle>
+            <div className="flex justify-between items-center">
+              <SheetTitle>Live Support</SheetTitle>
+              {/* Add an "End Chat" button */}
+              {step === 'chat' && (
+                <Button variant="outline" size="sm" onClick={endChatSession}>
+                  End Chat
+                </Button>
+              )}
+            </div>
             <SheetDescription>
               {step === 'details'
                 ? 'Please provide your details to start chatting.'
@@ -164,7 +203,7 @@ const LiveChat = () => {
                 {connectionStatus === 'connecting' && <div className="p-2 text-center text-xs text-muted-foreground">Connecting...</div>}
                 {connectionStatus === 'error' && 
                     <div className="p-2 text-center text-xs text-destructive bg-destructive/10">
-                        Connection error. Please check your network and firewall settings.
+                        Connection error. Please check your network for firewall restrictions.
                     </div>
                 }
               <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
@@ -193,7 +232,7 @@ const LiveChat = () => {
                         {msg.text}
                       </div>
                     </div>
-                  ))}
+                  ))}\
                 </div>
               </ScrollArea>
               <form
